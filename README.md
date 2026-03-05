@@ -1,14 +1,15 @@
-# ric-cm-docs
+# RiC-CM NavTool
 
-This template should help get you started developing with Vue 3 in Vite.
+RiC-CM NavTool is a Vue app for browsing:
+- Entities
+- Attributes
+- Relations
+- Relation Attributes
 
-## Recommended IDE Setup
+The app is built based on **RiC-CM 1.0**.
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vitejs.dev/config/).
+Official RiC-CM page:
+https://www.ica.org/ica-network/expert-groups/egad/records-in-contexts-conceptual-model/
 
 ## Project Setup
 
@@ -27,3 +28,16 @@ npm run dev
 ```sh
 npm run build
 ```
+
+### Deploy to GitHub Pages
+
+This project is configured for GitHub Pages with the repository path `/ric-cm-nav/`.
+
+```sh
+npm run deploy
+```
+
+Then in GitHub:
+1. Go to `Settings` -> `Pages`.
+2. Set `Source` to `Deploy from a branch`.
+3. Select branch `gh-pages` and folder `/ (root)`.
