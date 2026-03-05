@@ -33,11 +33,10 @@ npm run build
 
 This project is configured for GitHub Pages with the repository path `/ric-cm-nav/`.
 
-```sh
-npm run deploy
-```
-
 Then in GitHub:
 1. Go to `Settings` -> `Pages`.
-2. Set `Source` to `Deploy from a branch`.
-3. Select branch `gh-pages` and folder `/ (root)`.
+2. Set `Source` to `GitHub Actions`.
+3. Push to `main` (or `master`) to trigger `.github/workflows/deploy-pages.yml`.
+
+You can also trigger deployment manually in:
+`Actions` -> `Deploy to GitHub Pages` -> `Run workflow`.
