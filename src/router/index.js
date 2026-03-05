@@ -43,6 +43,11 @@ const router = createRouter({
       component: () => import("../views/RelationsView.vue"),
     },
     {
+      path: "/relation-attributes",
+      name: "relation-attributes",
+      component: () => import("../views/RelationAttributesView.vue"),
+    },
+    {
       path: "/entitycard",
       name: "entitycard",
       // route level code-splitting
@@ -65,6 +70,11 @@ const router = createRouter({
       // this generates a separate chunk (About.[hash].js) for this route
       // which is lazy-loaded when the route is visited.
       component: () => import("../views/AttributeCardView.vue"),
+    },
+    {
+      path: "/relationattributecard",
+      name: "relationattributecard",
+      component: () => import("../views/RelationAttributeCardView.vue"),
     },
   ],
 });

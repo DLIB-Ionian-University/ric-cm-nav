@@ -1,56 +1,40 @@
 <script setup>
 import { useMainStore } from '@/stores/store'
 import { computed, reactive } from "vue";
-// access the `store` variable anywhere in the component ✨
+
 const store = useMainStore()
 
-const attributeColumnFilters = reactive({
+const relAttrColumnFilters = reactive({
   code: "",
   name: "",
   description: "",
-  entities: "",
+  schema: "",
 });
 
-function clearAttributeFilter(key) {
-  attributeColumnFilters[key] = "";
+function clearRelAttrFilter(key) {
+  relAttrColumnFilters[key] = "";
 }
 
-const entityNameById = computed(() => {
-  const out = {};
-  for (const entity of store.data.entities || []) {
-    out[entity.ID] = entity.Name || "";
-  }
-  return out;
-});
-
-function getHierarchySearchText(entityCode) {
-  const descendants = store.data.descendants?.[entityCode] || [];
-  const tokens = [`${entityCode || ""} ${entityNameById.value[entityCode] || ""}`.trim()];
-
-  for (const descendantCode of descendants) {
-    tokens.push(`${descendantCode || ""} ${entityNameById.value[descendantCode] || ""}`.trim());
-  }
-
-  return tokens.join(" ").toLowerCase();
+function getSchemaParts(value) {
+  return (value || "")
+    .split(/;|\|\|/)
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
 }
 
-const filteredAttributes = computed(() => {
-  const codeKeyword = attributeColumnFilters.code.trim().toLowerCase();
-  const nameKeyword = attributeColumnFilters.name.trim().toLowerCase();
-  const descriptionKeyword = attributeColumnFilters.description.trim().toLowerCase();
-  const entitiesKeyword = attributeColumnFilters.entities.trim().toLowerCase();
+const filteredRelAttributes = computed(() => {
+  const codeKeyword = relAttrColumnFilters.code.trim().toLowerCase();
+  const nameKeyword = relAttrColumnFilters.name.trim().toLowerCase();
+  const descriptionKeyword = relAttrColumnFilters.description.trim().toLowerCase();
+  const schemaKeyword = relAttrColumnFilters.schema.trim().toLowerCase();
 
-  return store.getAttributes.filter((item) => {
-    const entitiesText = (item.entities || [])
-      .map((ent) => getHierarchySearchText(ent.code))
-      .join(" ")
-      .toLowerCase();
-
+  return (store.getRelattributes || []).filter((item) => {
+    const schemaText = getSchemaParts(item["Value schema"]).join(" ").toLowerCase();
     return (
       (codeKeyword === "" || (item.ID || "").toLowerCase().indexOf(codeKeyword) > -1) &&
       (nameKeyword === "" || (item.Name || "").toLowerCase().indexOf(nameKeyword) > -1) &&
       (descriptionKeyword === "" || (item.Definition || "").toLowerCase().indexOf(descriptionKeyword) > -1) &&
-      (entitiesKeyword === "" || entitiesText.indexOf(entitiesKeyword) > -1)
+      (schemaKeyword === "" || schemaText.indexOf(schemaKeyword) > -1)
     );
   });
 });
@@ -58,24 +42,24 @@ const filteredAttributes = computed(() => {
 
 <template>
   <div>
-    <h1>Attributes</h1>
+    <h1>Relation Attributes</h1>
     <div class="row">
-      <div class="attributes-table-wrap">
-        <table class="table table-sm attributes-table">
+      <div class="rel-attrs-table-wrap">
+        <table class="table table-sm rel-attrs-table">
           <thead>
             <tr>
               <th scope="col" class="thickcode">Code</th>
               <th scope="col" class="thick minwidth">Name</th>
               <th scope="col" class="thick minwidth">Description</th>
-              <th scope="col" class="thick minwidth">Entities</th>
+              <th scope="col" class="thick minwidth">Value Schema</th>
             </tr>
             <tr>
               <th scope="col">
                 <div class="input-group input-group-sm">
                   <input type="text" class="form-control form-control-sm" placeholder="Search Code"
-                    v-model="attributeColumnFilters.code">
+                    v-model="relAttrColumnFilters.code">
                   <button class="btn btn-outline-secondary filter-clear-btn" type="button"
-                    @click="clearAttributeFilter('code')">
+                    @click="clearRelAttrFilter('code')">
                     <i class="bi bi-x-circle"></i>
                   </button>
                 </div>
@@ -83,9 +67,9 @@ const filteredAttributes = computed(() => {
               <th scope="col">
                 <div class="input-group input-group-sm">
                   <input type="text" class="form-control form-control-sm" placeholder="Search Name"
-                    v-model="attributeColumnFilters.name">
+                    v-model="relAttrColumnFilters.name">
                   <button class="btn btn-outline-secondary filter-clear-btn" type="button"
-                    @click="clearAttributeFilter('name')">
+                    @click="clearRelAttrFilter('name')">
                     <i class="bi bi-x-circle"></i>
                   </button>
                 </div>
@@ -93,19 +77,19 @@ const filteredAttributes = computed(() => {
               <th scope="col">
                 <div class="input-group input-group-sm">
                   <input type="text" class="form-control form-control-sm" placeholder="Search Description"
-                    v-model="attributeColumnFilters.description">
+                    v-model="relAttrColumnFilters.description">
                   <button class="btn btn-outline-secondary filter-clear-btn" type="button"
-                    @click="clearAttributeFilter('description')">
+                    @click="clearRelAttrFilter('description')">
                     <i class="bi bi-x-circle"></i>
                   </button>
                 </div>
               </th>
               <th scope="col">
                 <div class="input-group input-group-sm">
-                  <input type="text" class="form-control form-control-sm" placeholder="Search Entities"
-                    v-model="attributeColumnFilters.entities">
+                  <input type="text" class="form-control form-control-sm" placeholder="Search Value Schema"
+                    v-model="relAttrColumnFilters.schema">
                   <button class="btn btn-outline-secondary filter-clear-btn" type="button"
-                    @click="clearAttributeFilter('entities')">
+                    @click="clearRelAttrFilter('schema')">
                     <i class="bi bi-x-circle"></i>
                   </button>
                 </div>
@@ -113,19 +97,16 @@ const filteredAttributes = computed(() => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="item in filteredAttributes">
+            <tr v-for="item in filteredRelAttributes" :key="item.ID">
               <th scope="row">
-                <a class="link-primary pnter" @click="store.selectAttribute(item['ID'])">{{ item["ID"] }}</a>
+                <a class="link-primary pnter" @click="store.selectRelattribute(item.ID)">{{ item.ID }}</a>
               </th>
+              <td class="minwidth">{{ item.Name }}</td>
+              <td class="minwidth">{{ item.Definition }}</td>
               <td class="minwidth">
-                {{ item["Name"] }}
-              </td>
-              <td class="minwidth">{{ item["Definition"] }}</td>
-              <td class="minwidth">
-                <ul class="entity-chip-list">
-                  <li class="entity-chip-item" v-for="itm in item.entities">
-                    <a class="link-primary pnter entity-chip-link" @click="store.selectEntity(itm['code'])">{{
-                      itm["code"] + " " + itm["name"] }}</a>
+                <ul class="schema-chip-list">
+                  <li class="schema-chip-item" v-for="schemaPart in getSchemaParts(item['Value schema'])" :key="schemaPart">
+                    <span class="schema-chip">{{ schemaPart }}</span>
                   </li>
                 </ul>
               </td>
@@ -148,30 +129,30 @@ const filteredAttributes = computed(() => {
 }
 
 .minwidth {
-  min-width: 200px;
+  min-width: 220px;
 }
 
 .pnter {
   cursor: pointer;
 }
 
-.attributes-table-wrap {
+.rel-attrs-table-wrap {
   max-height: 70vh;
   overflow-y: auto;
   overflow-x: auto;
 }
 
-.attributes-table thead th {
+.rel-attrs-table thead th {
   background: #fff;
 }
 
-.attributes-table thead tr:first-child th {
+.rel-attrs-table thead tr:first-child th {
   position: sticky;
   top: 0;
   z-index: 3;
 }
 
-.attributes-table thead tr:nth-child(2) th {
+.rel-attrs-table thead tr:nth-child(2) th {
   position: sticky;
   top: 2.25rem;
   z-index: 2;
@@ -181,27 +162,26 @@ const filteredAttributes = computed(() => {
   padding: 0.15rem 0.4rem;
 }
 
-.entity-chip-list {
+.schema-chip-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 0.35rem;
 }
 
-.entity-chip-item {
+.schema-chip-item {
   margin: 0;
 }
 
-.entity-chip-link {
+.schema-chip {
   display: inline-block;
-  padding: 0.22rem 0.5rem;
+  padding: 0.18rem 0.48rem;
   border: 1px solid #dbe4ff;
   border-radius: 999px;
   background: #f6f8ff;
-  text-decoration: none;
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   line-height: 1.2;
 }
 </style>

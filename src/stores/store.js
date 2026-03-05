@@ -17,6 +17,7 @@ export const useMainStore = defineStore("main", {
       entity: "RiC-E01",
       relation: "RiC-R001",
       attribute: "RiC-A01",
+      relattribute: "RiC-RA01",
     },
     filters: {
       relations: "",
@@ -230,6 +231,15 @@ export const useMainStore = defineStore("main", {
       });
     },
     getRelattributes: (state) => state.data.relattributes,
+    getRelattributeInfo: (state) => {
+      let relattr_tmp = _.find(_.cloneDeep(state.data.relattributes), {
+        ID: state.selected.relattribute,
+      });
+
+      return {
+        relattribute: relattr_tmp,
+      };
+    },
     getLevels: (state) => state.data.levels,
     getRelationInfo: (state) => {
       let ent_tmp = _.find(state.data.relation_descr, {
@@ -309,6 +319,10 @@ export const useMainStore = defineStore("main", {
     selectAttribute(attributeCode) {
       this.selected.attribute = attributeCode;
       router.push("/attributecard");
+    },
+    selectRelattribute(relattributeCode) {
+      this.selected.relattribute = relattributeCode;
+      router.push("/relationattributecard");
     },
     searchTable(tp, value) {
       if (value == null) {

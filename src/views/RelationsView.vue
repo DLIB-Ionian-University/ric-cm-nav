@@ -1,71 +1,183 @@
 <script setup>
 import { useMainStore } from '@/stores/store'
-
-const searchvalue = defineModel()
+import { computed, reactive } from "vue";
 // access the `store` variable anywhere in the component ✨
 const store = useMainStore()
-// console.log(JSON.stringify(store))
 
-function clearSearch() {
-  searchvalue.value = "";
-  store.searchTable("relations", "");
+const relationColumnFilters = reactive({
+  code: "",
+  name: "",
+  domain: "",
+  range: "",
+});
+
+function clearRelationFilter(key) {
+  relationColumnFilters[key] = "";
 }
 
+const entityNameById = computed(() => {
+  const out = {};
+  for (const entity of store.data.entities || []) {
+    out[entity.ID] = entity.Name || "";
+  }
+  return out;
+});
 
+function getHierarchySearchText(entityCode) {
+  const descendants = store.data.descendants?.[entityCode] || [];
+  const tokens = [`${entityCode || ""} ${entityNameById.value[entityCode] || ""}`.trim()];
+
+  for (const descendantCode of descendants) {
+    tokens.push(`${descendantCode || ""} ${entityNameById.value[descendantCode] || ""}`.trim());
+  }
+
+  return tokens.join(" ").toLowerCase();
+}
+
+const filteredRelations = computed(() => {
+  const codeKeyword = relationColumnFilters.code.trim().toLowerCase();
+  const nameKeyword = relationColumnFilters.name.trim().toLowerCase();
+  const domainKeyword = relationColumnFilters.domain.trim().toLowerCase();
+  const rangeKeyword = relationColumnFilters.range.trim().toLowerCase();
+
+  return store.getRelations.filter((item) => {
+    const domainText = (item.v || [])
+      .map((rel) => getHierarchySearchText(rel.DomainID))
+      .join(" ")
+      .toLowerCase();
+    const rangeText = (item.v || [])
+      .map((rel) => getHierarchySearchText(rel.RangeID))
+      .join(" ")
+      .toLowerCase();
+
+    return (
+      (codeKeyword === "" || (item.code || "").toLowerCase().indexOf(codeKeyword) > -1) &&
+      (nameKeyword === "" || (item.name || "").toLowerCase().indexOf(nameKeyword) > -1) &&
+      (domainKeyword === "" || domainText.indexOf(domainKeyword) > -1) &&
+      (rangeKeyword === "" || rangeText.indexOf(rangeKeyword) > -1)
+    );
+  });
+});
+
+const groupedRelationRows = computed(() => {
+  return filteredRelations.value.map((item) => {
+    const domains = [];
+    const ranges = [];
+    const seenDomains = new Set();
+    const seenRanges = new Set();
+    for (const rel of item.v || []) {
+      if (!seenDomains.has(rel.DomainID)) {
+        seenDomains.add(rel.DomainID);
+        domains.push({
+          id: rel.DomainID,
+          name: rel.DomainName,
+        });
+      }
+      if (!seenRanges.has(rel.RangeID)) {
+        seenRanges.add(rel.RangeID);
+        ranges.push({
+          id: rel.RangeID,
+          name: rel.RangeName,
+        });
+      }
+    }
+
+    return {
+      code: item.code,
+      name: item.name,
+      domains,
+      ranges,
+    };
+  });
+});
 </script>
 
 <template>
   <div>
     <h1>Relations</h1>
-    <div class="row justify-content-end">
-      <div class="col-sm-5 col">
-        <div class="input-group">
-          <input type="text" class="form-control" aria-label="Input group example" aria-describedby="btnGroupAddon"
-            placeholder="Search.." v-model="searchvalue"
-            v-on:keyup.enter="store.searchTable('relations', searchvalue.toLowerCase())">
-          <span class="input-group-text" id="btnGroupAddon"
-            @click="store.searchTable('relations', searchvalue.toLowerCase())"><i class="bi bi-search"></i></span>
-          <span class="input-group-text" id="btnGroupAddon" @click="clearSearch()"><i class="bi bi-x-circle"></i></span>
-        </div>
-      </div>
-    </div>
     <div class="row">
-      <table class="table table-sm">
-        <thead>
-          <tr>
-            <th scope="col" class="thickcode">Code</th>
-            <th scope="col" class="thick minwidth">Name</th>
-            <th scope="col" class="thick minwidth">Domain</th>
-            <th scope="col" class="thick minwidth">Range</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in store.getRelations  ">
-            <th scope="row">
-              <a class="link-primary pnter" @click="store.selectRelation(item['code'])">{{ item["code"] }}</a>
-            </th>
-            <td class="minwidth">
-              {{ item["name"] }}
-            </td>
-            <td class="minwidth">
-              <ul v-for="itm in item.v">
-                <li class="nav-item">
-                  <a class="link-primary pnter" @click="store.selectEntity(itm['DomainID'])">{{
-                    itm["DomainID"] + " " + itm["DomainName"] }}</a>
-                </li>
-              </ul>
-            </td>
-            <td class="minwidth">
-              <ul v-for="itm in item.v">
-                <li class="nav-item">
-                  <a class="link-primary pnter" @click="store.selectEntity(itm['RangeID'])">{{
-                    itm["RangeID"] + " " + itm["RangeName"] }}</a>
-                </li>
-              </ul>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="relations-table-wrap">
+        <table class="table table-sm relations-table">
+          <thead>
+            <tr>
+              <th scope="col" class="thickcode">Code</th>
+              <th scope="col" class="thick minwidth">Name</th>
+              <th scope="col" class="thick minwidth">Domain</th>
+              <th scope="col" class="thick minwidth">Range</th>
+            </tr>
+            <tr>
+              <th scope="col">
+                <div class="input-group input-group-sm">
+                  <input type="text" class="form-control form-control-sm" placeholder="Search Code"
+                    v-model="relationColumnFilters.code">
+                  <button class="btn btn-outline-secondary filter-clear-btn" type="button"
+                    @click="clearRelationFilter('code')">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                </div>
+              </th>
+              <th scope="col">
+                <div class="input-group input-group-sm">
+                  <input type="text" class="form-control form-control-sm" placeholder="Search Name"
+                    v-model="relationColumnFilters.name">
+                  <button class="btn btn-outline-secondary filter-clear-btn" type="button"
+                    @click="clearRelationFilter('name')">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                </div>
+              </th>
+              <th scope="col">
+                <div class="input-group input-group-sm">
+                  <input type="text" class="form-control form-control-sm" placeholder="Search Domain"
+                    v-model="relationColumnFilters.domain">
+                  <button class="btn btn-outline-secondary filter-clear-btn" type="button"
+                    @click="clearRelationFilter('domain')">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                </div>
+              </th>
+              <th scope="col">
+                <div class="input-group input-group-sm">
+                  <input type="text" class="form-control form-control-sm" placeholder="Search Range"
+                    v-model="relationColumnFilters.range">
+                  <button class="btn btn-outline-secondary filter-clear-btn" type="button"
+                    @click="clearRelationFilter('range')">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                </div>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in groupedRelationRows" :key="item.code">
+                <th scope="row">
+                  <a class="link-primary pnter" @click="store.selectRelation(item.code)">{{ item.code }}</a>
+                </th>
+                <td class="minwidth">
+                  {{ item.name }}
+                </td>
+                <td class="minwidth">
+                  <ul class="entity-chip-list">
+                    <li class="entity-chip-item" v-for="domain in item.domains" :key="domain.id">
+                      <a class="link-primary pnter entity-chip-link" @click="store.selectEntity(domain.id)">
+                        {{ domain.id + " " + domain.name }}
+                      </a>
+                    </li>
+                  </ul>
+                </td>
+                <td class="minwidth">
+                  <ul class="entity-chip-list">
+                    <li class="entity-chip-item" v-for="range in item.ranges" :key="range.id">
+                      <a class="link-primary pnter entity-chip-link" @click="store.selectEntity(range.id)">
+                        {{ range.id + " " + range.name }}
+                      </a>
+                    </li>
+                  </ul>
+                </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>
@@ -86,5 +198,55 @@ function clearSearch() {
 
 .pnter {
   cursor: pointer;
+}
+
+.relations-table-wrap {
+  max-height: 70vh;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.relations-table thead th {
+  background: #fff;
+}
+
+.relations-table thead tr:first-child th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+}
+
+.relations-table thead tr:nth-child(2) th {
+  position: sticky;
+  top: 2.25rem;
+  z-index: 2;
+}
+
+.filter-clear-btn {
+  padding: 0.15rem 0.4rem;
+}
+
+.entity-chip-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.entity-chip-item {
+  margin: 0;
+}
+
+.entity-chip-link {
+  display: inline-block;
+  padding: 0.22rem 0.5rem;
+  border: 1px solid #dbe4ff;
+  border-radius: 999px;
+  background: #f6f8ff;
+  text-decoration: none;
+  font-size: 0.92rem;
+  line-height: 1.2;
 }
 </style>
