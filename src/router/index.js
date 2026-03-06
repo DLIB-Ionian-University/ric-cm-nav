@@ -48,6 +48,11 @@ const router = createRouter({
       component: () => import("../views/RelationAttributesView.vue"),
     },
     {
+      path: "/nav-playground",
+      name: "nav-playground",
+      component: () => import("../views/NavPlaygroundView.vue"),
+    },
+    {
       path: "/entitycard",
       name: "entitycard",
       // route level code-splitting

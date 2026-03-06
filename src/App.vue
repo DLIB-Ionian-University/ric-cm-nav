@@ -1,9 +1,37 @@
 <script setup>
-import { RouterLink, RouterView, useRoute } from 'vue-router'
+import { computed } from 'vue'
+import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 import { Network } from 'lucide-vue-next'
 // import HelloWorld from './components/HelloWorld.vue'
 
 const route = useRoute()
+const router = useRouter()
+
+const cardRouteToListRoute = {
+  '/entitycard': '/entities',
+  '/attributecard': '/attributes',
+  '/relationcard': '/relations',
+  '/relationattributecard': '/relation-attributes',
+}
+
+const isCardRoute = computed(() => Object.prototype.hasOwnProperty.call(cardRouteToListRoute, route.path))
+
+const cardRouteTitle = computed(() => {
+  if (route.path === '/entitycard') return 'Entity Card'
+  if (route.path === '/attributecard') return 'Attribute Card'
+  if (route.path === '/relationcard') return 'Relation Card'
+  if (route.path === '/relationattributecard') return 'Relation Attribute Card'
+  return 'Card'
+})
+
+function closeCardPopup() {
+  const fallbackRoute = cardRouteToListRoute[route.path] || '/entities'
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push(fallbackRoute)
+  }
+}
 
 function isSectionActive(section) {
   const path = route.path
@@ -13,6 +41,7 @@ function isSectionActive(section) {
   if (section === 'relation-attributes') {
     return path === '/relation-attributes' || path === '/relationattributecard'
   }
+  if (section === 'nav-playground') return path === '/nav-playground'
   return false
 }
 </script>
@@ -56,6 +85,12 @@ function isSectionActive(section) {
                 Relation Attributes
               </RouterLink>
             </li>
+            <li class="nav-item">
+              <RouterLink class="nav-link" :class="{ 'nav-link-active': isSectionActive('nav-playground') }"
+                to="/nav-playground">
+                Nav Playground
+              </RouterLink>
+            </li>
           </ul>
           <div class="ms-lg-auto mt-2 mt-lg-0">
             <button type="button" class="btn btn-outline-secondary btn-sm d-flex align-items-center"
@@ -79,11 +114,22 @@ function isSectionActive(section) {
               RiC-CM NavTool helps browse RiC-CM entities, attributes, relations, and relation attributes.
             </p>
             <p class="mb-0">
-              This app is built based on <strong>RiC-CM 1.0</strong>.
-              <span class="d-block mt-2">Official page:</span>
-              <a href="https://www.ica.org/ica-network/expert-groups/egad/records-in-contexts-conceptual-model/"
+              This app is built based on <strong>RiC-CM 1.0</strong>
+              (<a href="https://www.ica.org/ica-network/expert-groups/egad/records-in-contexts-conceptual-model/"
                 target="_blank" rel="noopener noreferrer">
                 Records in Contexts Conceptual Model
+              </a>).
+            </p>
+            <p class="mb-0 mt-3 creator-line">
+              Creator:
+              <a href="https://ilam.ionio.gr/en/staff/764-damigos/" target="_blank" rel="noopener noreferrer">
+                Matthew Damigos
+              </a>,
+              <a href="http://dlib.ionio.gr/dlib/" target="_blank" rel="noopener noreferrer">
+                Laboratory of Digital Libraries and Electronic Publishing
+              </a>,
+              <a href="https://ionio.gr/en/" target="_blank" rel="noopener noreferrer">
+                Ionian University
               </a>.
             </p>
           </div>
@@ -95,7 +141,18 @@ function isSectionActive(section) {
     </div>
 
     <div class="jumbotron">
-      <RouterView />
+      <RouterView v-slot="{ Component }">
+        <div v-if="isCardRoute" class="card-popup-wrap" role="dialog" aria-modal="true">
+          <div class="card-popup-header">
+            <h5 class="mb-0">{{ cardRouteTitle }}</h5>
+            <button type="button" class="btn-close" aria-label="Close" @click="closeCardPopup"></button>
+          </div>
+          <div class="card-popup-body">
+            <component :is="Component" />
+          </div>
+        </div>
+        <component :is="Component" v-else />
+      </RouterView>
     </div>
   </main>
 </template>
@@ -122,5 +179,35 @@ function isSectionActive(section) {
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 0.25rem;
+}
+
+.creator-line {
+  color: rgba(33, 37, 41, 0.62);
+  font-size: 0.92rem;
+}
+
+.card-popup-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 2055;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.card-popup-body {
+  flex: 1 1 auto;
+  overflow: auto;
+  padding: 1rem;
 }
 </style>

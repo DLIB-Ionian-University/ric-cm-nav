@@ -16,7 +16,7 @@ const rel_type_inv = {
       <ol class="breadcrumb">
         <li class="breadcrumb-item"></li>
         <li class="breadcrumb-item" v-for="i in (store.getEntityInfo).entity.ancestors">
-          <a href="#" @click="store.selectEntity(i.code)">{{ i.code }} {{ i.name }}</a>
+          <a href="#" @click.prevent="store.selectEntity(i.code)">{{ i.code }} {{ i.name }}</a>
         </li>
         <li class="breadcrumb-item">{{ (store.getEntityInfo).entity.code }} {{ (store.getEntityInfo).entity.name }}</li>
       </ol>

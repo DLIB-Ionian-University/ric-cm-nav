@@ -1,7 +1,9 @@
 import "./assets/main.css";
 
 import { createApp } from "vue";
-import { createPinia } from "pinia";
+import VNetworkGraph from "v-network-graph";
+import "v-network-graph/lib/style.css";
+import "vue-select/dist/vue-select.css";
 
 import App from "./App.vue";
 import router from "./router";
@@ -14,6 +16,7 @@ DataService.getSession().then((sessionData) => {
   const app = createApp(App);
   app.use(createStore(sessionData));
   app.use(router);
+  app.use(VNetworkGraph);
 
   app.mount("#app");
 });
