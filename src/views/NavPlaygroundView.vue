@@ -792,7 +792,7 @@ const graphConfigs = defineConfigs({
 
 <template>
   <div class="playground-page">
-    <h1>Nav Playground</h1>
+    <h1>Modeling Playground</h1>
     <p class="playground-note">
       Build your own graph: add entity/text nodes, relation edges between entity nodes, and attribute edges to text
       nodes.

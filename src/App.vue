@@ -41,7 +41,7 @@ function isSectionActive(section) {
   if (section === 'relation-attributes') {
     return path === '/relation-attributes' || path === '/relationattributecard'
   }
-  if (section === 'nav-playground') return path === '/nav-playground'
+  if (section === 'modeling-playground') return path === '/modeling-playground' || path === '/nav-playground'
   return false
 }
 </script>
@@ -86,9 +86,9 @@ function isSectionActive(section) {
               </RouterLink>
             </li>
             <li class="nav-item">
-              <RouterLink class="nav-link" :class="{ 'nav-link-active': isSectionActive('nav-playground') }"
-                to="/nav-playground">
-                Nav Playground
+              <RouterLink class="nav-link" :class="{ 'nav-link-active': isSectionActive('modeling-playground') }"
+                to="/modeling-playground">
+                Modeling Playground
               </RouterLink>
             </li>
           </ul>

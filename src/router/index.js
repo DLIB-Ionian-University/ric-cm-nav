@@ -48,9 +48,13 @@ const router = createRouter({
       component: () => import("../views/RelationAttributesView.vue"),
     },
     {
-      path: "/nav-playground",
-      name: "nav-playground",
+      path: "/modeling-playground",
+      name: "modeling-playground",
       component: () => import("../views/NavPlaygroundView.vue"),
+    },
+    {
+      path: "/nav-playground",
+      redirect: "/modeling-playground",
     },
     {
       path: "/entitycard",
