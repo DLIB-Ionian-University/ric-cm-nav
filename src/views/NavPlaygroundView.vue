@@ -735,7 +735,7 @@ const graphConfigs = defineConfigs({
     normal: {
       type: "rect",
       width: (node) => (node.nodeType === "entity" ? 220 : 190),
-      height: (node) => (node.nodeType === "entity" ? 64 : 56),
+      height: (node) => (node.nodeType === "entity" ? 64 : 64),
       borderRadius: (node) => (node.nodeType === "entity" ? 14 : 10),
       radius: 0,
       color: (node) => (node.nodeType === "text" ? "#fff3cd" : "#dce8ff"),
@@ -921,9 +921,13 @@ const graphConfigs = defineConfigs({
                 </text>
               </template>
               <template v-else>
-                <text :x="x" :y="y" :font-size="10" text-anchor="middle" dominant-baseline="central"
+                <text :x="x" :y="y - 8" :font-size="10" text-anchor="middle" dominant-baseline="central"
                   fill="#0f172a" font-weight="700">
                   {{ playgroundNodes[nodeId].displayName || playgroundNodes[nodeId].name }}
+                </text>
+                <text :x="x" :y="y + 9" :font-size="9" text-anchor="middle"
+                  dominant-baseline="central" fill="#6b7280" font-weight="500">
+                  {{ nodeId }}
                 </text>
               </template>
             </g>

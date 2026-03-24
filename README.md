@@ -29,6 +29,25 @@ npm run dev
 npm run build
 ```
 
+### Test Locally Before Push
+
+1. Start the development server:
+
+```sh
+npm run dev
+```
+
+2. Open the local Vite URL (usually `http://localhost:5173`) and go to the Modeling Playground.
+3. Add a text node and verify it shows:
+- First line: text label
+- Second line: node ID (for example `n1`), like entity nodes
+
+Optional: preview the production build locally:
+
+```sh
+npm run preview
+```
+
 ### Deploy to GitHub Pages
 
 This project is configured for GitHub Pages with the repository path `/ric-cm-nav/`.
