@@ -437,27 +437,50 @@ const entityOptions = computed(() => {
 });
 
 const relationDefinitions = computed(() => {
-  const byId = new Map();
-  for (const rel of store.data.relations || []) {
+  const relationRows = store.data.relations || [];
+  const relationNameById = new Map();
+  for (const rel of relationRows) {
     const relationId = rel["Relation ID"];
-    if (String(relationId || "").endsWith("i")) continue;
+    if (!relationId || relationNameById.has(relationId)) continue;
+    relationNameById.set(relationId, rel["Name"] || relationId);
+  }
+
+  const byId = new Map();
+  const ensureRelation = (relationId, fallbackName = "") => {
+    if (!relationId) return null;
     if (!byId.has(relationId)) {
+      const relationName = relationNameById.get(relationId) || fallbackName || relationId;
       byId.set(relationId, {
         value: relationId,
-        label: `${relationId} ${rel["Name"]}`,
+        label: `${relationId} ${relationName}`.trim(),
         constraints: [],
       });
     }
-    const item = byId.get(relationId);
-    const key = `${rel["DomainID"]}=>${rel["RangeID"]}`;
+    return byId.get(relationId);
+  };
+
+  const addConstraint = (relationId, domainId, rangeId, fallbackName = "") => {
+    const item = ensureRelation(relationId, fallbackName);
+    if (!item || !domainId || !rangeId) return;
+    const key = `${domainId}=>${rangeId}`;
     if (!item.constraints.some((constraint) => constraint.key === key)) {
       item.constraints.push({
         key,
-        domainId: rel["DomainID"],
-        rangeId: rel["RangeID"],
+        domainId,
+        rangeId,
       });
     }
+  };
+
+  for (const rel of relationRows) {
+    const relationId = rel["Relation ID"];
+    if (!relationId) continue;
+    addConstraint(relationId, rel["DomainID"], rel["RangeID"], rel["Name"]);
+
+    const inverseRelationId = relationId.endsWith("i") ? relationId.slice(0, -1) : `${relationId}i`;
+    addConstraint(inverseRelationId, rel["RangeID"], rel["DomainID"]);
   }
+
   return Array.from(byId.values()).sort((a, b) => a.value.localeCompare(b.value));
 });
 
