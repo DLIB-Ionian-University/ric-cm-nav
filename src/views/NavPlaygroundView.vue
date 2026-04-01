@@ -628,6 +628,12 @@ function addRelationEdge() {
   ensureGraphVisible();
 }
 
+function swapRelationNodes() {
+  const sourceNodeId = relationSourceNodeId.value;
+  relationSourceNodeId.value = relationTargetNodeId.value;
+  relationTargetNodeId.value = sourceNodeId;
+}
+
 function addAttributeEdge() {
   if (!selectedAttributeId.value || !attributeSourceNodeId.value || !attributeTargetNodeId.value) return;
   const sourceEntityId = entityIdFromNode(attributeSourceNodeId.value);
@@ -837,10 +843,17 @@ const graphConfigs = defineConfigs({
               :reduce="(opt) => opt.value"
               :searchable="true" :clearable="true" v-model="relationSourceNodeId"
               placeholder="Source entity node..." />
-            <v-select class="control-select" :options="relationTargetNodeOptions" label="label"
-              :reduce="(opt) => opt.value"
-              :searchable="true" :clearable="true" v-model="relationTargetNodeId"
-              placeholder="Target entity node..." />
+            <div class="select-info-row">
+              <v-select class="control-select" :options="relationTargetNodeOptions" label="label"
+                :reduce="(opt) => opt.value"
+                :searchable="true" :clearable="true" v-model="relationTargetNodeId"
+                placeholder="Target entity node..." />
+              <button class="btn btn-sm btn-outline-secondary icon-btn"
+                :disabled="!relationSourceNodeId && !relationTargetNodeId"
+                title="Swap source and target entities" @click="swapRelationNodes">
+                <i class="bi bi-arrow-left-right"></i>
+              </button>
+            </div>
             <div class="select-info-row">
               <v-select class="control-select" :options="validRelationOptions" label="label"
                 :reduce="(opt) => opt.value" :searchable="true" :clearable="true" v-model="selectedRelationId"
