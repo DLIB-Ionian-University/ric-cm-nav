@@ -11,6 +11,11 @@ The app is built based on **RiC-CM 1.0**.
 Official RiC-CM page:
 https://www.ica.org/ica-network/expert-groups/egad/records-in-contexts-conceptual-model/
 
+## License
+
+This project is licensed under the
+[Creative Commons Attribution 4.0 International (CC-BY-4.0)](https://creativecommons.org/licenses/by/4.0/).
+
 ## Project Setup
 
 ```sh

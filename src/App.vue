@@ -132,6 +132,12 @@ function isSectionActive(section) {
                 Ionian University
               </a>.
             </p>
+            <p class="mb-0 mt-2 creator-line">
+              License:
+              <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer">
+                CC-BY-4.0
+              </a>.
+            </p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
