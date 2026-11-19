@@ -75,6 +75,21 @@ function localizeInputData(rawInputData, locale) {
     };
   });
 
+  inputData.relattributes = (inputData.relattributes || []).map((relationAttribute) => {
+    const localizedRelationAttribute = localized(relationAttribute, locale);
+    return {
+      ID: relationAttribute.ID,
+      Name: localizedRelationAttribute.Name || "",
+      Definition: localizedRelationAttribute.Definition || "",
+      Specifications: localizedRelationAttribute.Specifications || "",
+      Extensibility: localizedRelationAttribute.Extensibility || "",
+      Repeatability: localizedRelationAttribute.Repeatability || "",
+      "Value schema": localizedRelationAttribute["Value schema"] || "",
+      "Scope Notes": localizedRelationAttribute["Scope Notes"] || "",
+      Examples: localizedRelationAttribute.Examples || "",
+    };
+  });
+
   inputData.relations = (inputData.relations || []).map((relation) => ({
     ...relation,
     Name: localized(relation.Name, locale) || "",

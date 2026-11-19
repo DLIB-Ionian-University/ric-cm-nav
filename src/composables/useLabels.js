@@ -22,8 +22,8 @@ export function useLabels() {
     t,
     locale: currentLocale,
     localeOptions: [
-      { value: "en", label: "English" },
-      { value: "es", label: "Español" }
+      { value: "en", label: "🇬🇧 English" },
+      { value: "es", label: "🇪🇸 Español" }
     ]
   };
 }
