@@ -1,90 +1,42 @@
 <script setup>
-import { useMainStore } from '@/stores/store'
-import { computed, reactive } from "vue";
+import { computed, reactive } from 'vue';
+import { Braces, Database, Search, Shapes, X } from 'lucide-vue-next';
+import { useMainStore } from '@/stores/store';
 import { useLabels } from '@/composables/useLabels';
+import '@/assets/catalog-pages.css';
 
-const store = useMainStore()
-const { t } = useLabels()
-
-const attributeColumnFilters = reactive({ code: "", name: "", description: "", entities: "" });
-function clearAttributeFilter(key) { attributeColumnFilters[key] = ""; }
-
-const entityNameById = computed(() => {
-  const out = {};
-  for (const entity of store.data.entities || []) out[entity.ID] = entity.Name || "";
-  return out;
-});
-
-function getHierarchySearchText(entityCode) {
-  const descendants = store.data.descendants?.[entityCode] || [];
-  const tokens = [`${entityCode || ""} ${entityNameById.value[entityCode] || ""}`.trim()];
-  for (const descendantCode of descendants) tokens.push(`${descendantCode || ""} ${entityNameById.value[descendantCode] || ""}`.trim());
-  return tokens.join(" ").toLowerCase();
-}
-
-const filteredAttributes = computed(() => {
-  const codeKeyword = attributeColumnFilters.code.trim().toLowerCase();
-  const nameKeyword = attributeColumnFilters.name.trim().toLowerCase();
-  const descriptionKeyword = attributeColumnFilters.description.trim().toLowerCase();
-  const entitiesKeyword = attributeColumnFilters.entities.trim().toLowerCase();
-
-  return store.getAttributes.filter((item) => {
-    const entitiesText = (item.entities || []).map((ent) => getHierarchySearchText(ent.code)).join(" ").toLowerCase();
-    return (
-      (codeKeyword === "" || (item.ID || "").toLowerCase().indexOf(codeKeyword) > -1) &&
-      (nameKeyword === "" || (item.Name || "").toLowerCase().indexOf(nameKeyword) > -1) &&
-      (descriptionKeyword === "" || (item.Definition || "").toLowerCase().indexOf(descriptionKeyword) > -1) &&
-      (entitiesKeyword === "" || entitiesText.indexOf(entitiesKeyword) > -1)
-    );
-  });
-});
+const store = useMainStore();
+const { t } = useLabels();
+const filters = reactive({ code: '', name: '', description: '', entities: '' });
+const entityNames = computed(() => Object.fromEntries((store.data.entities || []).map((entity) => [entity.ID, entity.Name || ''])));
+const hierarchyText = (code) => [code, entityNames.value[code], ...(store.data.descendants?.[code] || []).flatMap((id) => [id, entityNames.value[id]])].join(' ').toLowerCase();
+const includes = (value, query) => !query.trim() || (value || '').toLowerCase().includes(query.trim().toLowerCase());
+const filteredAttributes = computed(() => store.getAttributes.filter((item) => includes(item.ID, filters.code) && includes(item.Name, filters.name) && includes(item.Definition, filters.description) && includes((item.entities || []).map((entity) => hierarchyText(entity.code)).join(' '), filters.entities)));
+const coveredEntities = computed(() => new Set(store.getAttributes.flatMap((item) => (item.entities || []).map((entity) => entity.code))).size);
+const valueSchemas = computed(() => new Set(store.getAttributes.flatMap((item) => Array.isArray(item['Value schema']) ? item['Value schema'] : [item['Value schema']]).filter(Boolean)).size);
 </script>
 
 <template>
-  <div>
-    <h1>{{ t('attributesView.title') }}</h1>
-    <div class="row">
-      <div class="attributes-table-wrap">
-        <table class="table table-sm attributes-table">
-          <thead>
-            <tr>
-              <th scope="col" class="thickcode">{{ t('common.code') }}</th>
-              <th scope="col" class="thick minwidth">{{ t('common.name') }}</th>
-              <th scope="col" class="thick minwidth">{{ t('common.description') }}</th>
-              <th scope="col" class="thick minwidth">{{ t('nav.entities') }}</th>
-            </tr>
-            <tr>
-              <th scope="col"><div class="input-group input-group-sm"><input type="text" class="form-control form-control-sm" :placeholder="t('common.searchCode')" v-model="attributeColumnFilters.code"><button class="btn btn-outline-secondary filter-clear-btn" type="button" @click="clearAttributeFilter('code')"><i class="bi bi-x-circle"></i></button></div></th>
-              <th scope="col"><div class="input-group input-group-sm"><input type="text" class="form-control form-control-sm" :placeholder="t('common.searchName')" v-model="attributeColumnFilters.name"><button class="btn btn-outline-secondary filter-clear-btn" type="button" @click="clearAttributeFilter('name')"><i class="bi bi-x-circle"></i></button></div></th>
-              <th scope="col"><div class="input-group input-group-sm"><input type="text" class="form-control form-control-sm" :placeholder="t('common.searchDescription')" v-model="attributeColumnFilters.description"><button class="btn btn-outline-secondary filter-clear-btn" type="button" @click="clearAttributeFilter('description')"><i class="bi bi-x-circle"></i></button></div></th>
-              <th scope="col"><div class="input-group input-group-sm"><input type="text" class="form-control form-control-sm" :placeholder="t('attributesView.searchEntities')" v-model="attributeColumnFilters.entities"><button class="btn btn-outline-secondary filter-clear-btn" type="button" @click="clearAttributeFilter('entities')"><i class="bi bi-x-circle"></i></button></div></th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in filteredAttributes" :key="item.ID">
-              <th scope="row"><a class="link-primary pnter" @click="store.selectAttribute(item['ID'])">{{ item["ID"] }}</a></th>
-              <td class="minwidth">{{ item["Name"] }}</td>
-              <td class="minwidth">{{ item["Definition"] }}</td>
-              <td class="minwidth"><ul class="entity-chip-list"><li class="entity-chip-item" v-for="itm in item.entities" :key="itm.code"><a class="link-primary pnter entity-chip-link" @click="store.selectEntity(itm['code'])">{{ itm["code"] + " " + itm["name"] }}</a></li></ul></td>
-            </tr>
-          </tbody>
-        </table>
+  <section class="catalog-page">
+    <header class="catalog-hero"><div class="catalog-hero-icon"><Braces :size="27" /></div><div><span class="catalog-eyebrow">{{ t('attributesView.eyebrow') }}</span><h1>{{ t('attributesView.title') }}</h1><p>{{ t('attributesView.intro') }}</p></div></header>
+    <div class="attribute-layout">
+      <div class="catalog-shell">
+        <div class="catalog-toolbar"><div class="catalog-toolbar-copy"><strong>{{ t('attributesView.results', { count: filteredAttributes.length }) }}</strong><span>{{ t('attributesView.browseHint') }}</span></div><Search :size="20" class="toolbar-icon" /></div>
+        <div class="catalog-table-wrap"><table class="table table-sm catalog-table">
+          <thead><tr><th class="catalog-code-column">{{ t('common.code') }}</th><th class="catalog-text-column">{{ t('common.name') }}</th><th class="catalog-text-column">{{ t('common.description') }}</th><th class="catalog-text-column">{{ t('nav.entities') }}</th></tr><tr>
+            <th><div class="input-group input-group-sm"><input v-model="filters.code" class="form-control" :placeholder="t('common.searchCode')"><button class="catalog-clear" @click="filters.code=''" :aria-label="t('common.close')"><X :size="15" /></button></div></th>
+            <th><div class="input-group input-group-sm"><input v-model="filters.name" class="form-control" :placeholder="t('common.searchName')"><button class="catalog-clear" @click="filters.name=''" :aria-label="t('common.close')"><X :size="15" /></button></div></th>
+            <th><div class="input-group input-group-sm"><input v-model="filters.description" class="form-control" :placeholder="t('common.searchDescription')"><button class="catalog-clear" @click="filters.description=''" :aria-label="t('common.close')"><X :size="15" /></button></div></th>
+            <th><div class="input-group input-group-sm"><input v-model="filters.entities" class="form-control" :placeholder="t('attributesView.searchEntities')"><button class="catalog-clear" @click="filters.entities=''" :aria-label="t('common.close')"><X :size="15" /></button></div></th>
+          </tr></thead>
+          <tbody><tr v-for="item in filteredAttributes" :key="item.ID"><th><button class="catalog-code" @click="store.selectAttribute(item.ID)">{{ item.ID }}</button></th><td>{{ item.Name }}</td><td>{{ item.Definition }}</td><td><ul class="catalog-chips"><li v-for="entity in item.entities" :key="entity.code"><button class="catalog-chip" @click="store.selectEntity(entity.code)">{{ entity.code }} {{ entity.name }}</button></li></ul></td></tr></tbody>
+        </table><p v-if="!filteredAttributes.length" class="catalog-empty">{{ t('common.noResults') }}</p></div>
       </div>
+      <aside class="overview-card"><span class="overview-kicker">{{ t('attributesView.overview') }}</span><div class="overview-stat"><span class="stat-icon"><Braces :size="19" /></span><div><strong>{{ store.getAttributes.length }}</strong><small>{{ t('nav.attributes') }}</small></div></div><div class="overview-stat"><span class="stat-icon"><Shapes :size="19" /></span><div><strong>{{ coveredEntities }}</strong><small>{{ t('attributesView.entitiesCovered') }}</small></div></div><div class="overview-stat"><span class="stat-icon"><Database :size="19" /></span><div><strong>{{ valueSchemas }}</strong><small>{{ t('attributesView.valueSchemas') }}</small></div></div></aside>
     </div>
-  </div>
+  </section>
 </template>
 
 <style scoped>
-.thickcode { font-weight: bold; min-width: 100px; }
-.thick { font-weight: bold; }
-.minwidth { min-width: 200px; }
-.pnter { cursor: pointer; }
-.attributes-table-wrap { max-height: 70vh; overflow-y: auto; overflow-x: auto; }
-.attributes-table thead th { background: #fff; }
-.attributes-table thead tr:first-child th { position: sticky; top: 0; z-index: 3; }
-.attributes-table thead tr:nth-child(2) th { position: sticky; top: 2.25rem; z-index: 2; }
-.filter-clear-btn { padding: 0.15rem 0.4rem; }
-.entity-chip-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.35rem; }
-.entity-chip-item { margin: 0; }
-.entity-chip-link { display: inline-block; padding: 0.22rem 0.5rem; border: 1px solid #dbe4ff; border-radius: 999px; background: #f6f8ff; text-decoration: none; font-size: 0.92rem; line-height: 1.2; }
+.attribute-layout{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:1.2rem;align-items:start}.toolbar-icon{color:var(--catalog-blue)}.overview-card{position:sticky;top:1rem;overflow:hidden;border:1px solid var(--catalog-line);border-radius:18px;background:linear-gradient(160deg,#0b57d0,#073b91);color:#fff;box-shadow:0 14px 40px rgba(22,65,120,.14)}.overview-kicker{display:block;padding:1rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.17);font-size:.76rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase}.overview-stat{display:flex;align-items:center;gap:.75rem;padding:1rem 1.1rem;border-bottom:1px solid rgba(255,255,255,.12)}.overview-stat:last-child{border-bottom:0}.stat-icon{display:grid;place-items:center;width:2.25rem;height:2.25rem;border-radius:10px;background:rgba(255,255,255,.13)}.overview-stat strong,.overview-stat small{display:block}.overview-stat strong{font:700 1.35rem/1 Georgia,serif}.overview-stat small{margin-top:.25rem;opacity:.76}@media(max-width:900px){.attribute-layout{grid-template-columns:1fr}.overview-card{position:static;display:grid;grid-template-columns:repeat(3,1fr)}.overview-kicker{grid-column:1/-1}}@media(max-width:560px){.overview-card{grid-template-columns:1fr}.overview-kicker{grid-column:auto}}
 </style>

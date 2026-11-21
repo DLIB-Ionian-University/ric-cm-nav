@@ -47,6 +47,15 @@ const showImportModal = ref(false);
 const importFile = ref(null);
 const importStatus = ref("");
 const importError = ref("");
+const inspectorTab = ref("details");
+const selectedNode = computed(() => {
+  const id = selectedNodeIds.value[0];
+  return id ? { id, ...playgroundNodes.value[id] } : null;
+});
+const selectedEdge = computed(() => {
+  const id = selectedEdgeIds.value[0];
+  return id ? { id, ...playgroundEdges.value[id] } : null;
+});
 
 const entityIdByName = computed(() => {
   const out = {};
@@ -823,46 +832,41 @@ const graphConfigs = defineConfigs({
 
 <template>
   <div class="playground-page">
-    <h1>Modeling Playground</h1>
+    <header class="playground-heading">
+      <div><span class="playground-eyebrow">RiC-CM</span><h1>{{ t('playground.title') }}</h1>
     <p class="playground-note">
       Build your own graph: add entity/text nodes, relation edges between entity nodes, and attribute edges to text
       nodes.
-    </p>
-    <div class="playground-legend">
-      <span class="legend-item"><span class="legend-dot entity-dot"></span> Entity node</span>
-      <span class="legend-item"><span class="legend-dot text-dot"></span> Text node</span>
-      <span class="legend-item"><span class="legend-line rel-line"></span> Relation edge</span>
-      <span class="legend-item"><span class="legend-line attr-line"></span> Attribute edge</span>
-    </div>
+    </p></div>
+      <div class="heading-actions"><button class="btn btn-sm btn-outline-primary" @click="openImportModal">{{ t('playground.import') }}</button><button class="btn btn-sm btn-primary" @click="openExportModal">{{ t('playground.export') }}</button></div>
+    </header>
 
     <div class="playground-grid">
       <aside class="playground-controls left-nav">
         <div class="left-nav-header">
-          <h5 class="mb-0">Config Options</h5>
+          <h5 class="mb-0">{{ t('playground.tools') }}</h5>
         </div>
-        <div class="control-group">
-          <label class="form-label">Add Entity Node</label>
+        <section class="tool-section">
+          <h6>{{ t('playground.build') }}</h6>
+          <label class="form-label">{{ t('playground.entity') }}</label>
           <div class="control-row">
             <v-select class="control-select" :options="entityOptions" label="label" :reduce="(opt) => opt.value"
               :searchable="true" :clearable="true" v-model="selectedEntityId" placeholder="Select entity..." />
             <button class="btn btn-sm btn-outline-secondary icon-btn" :disabled="!selectedEntityId"
-              title="Preview selected entity card" @click="openEntityPreview">
+              :title="t('playground.previewEntity')" @click="openEntityPreview">
               <i class="bi bi-info-circle"></i>
             </button>
-            <button class="btn btn-sm btn-outline-primary" @click="addEntityNode">Add</button>
+            <button class="btn btn-sm btn-primary" @click="addEntityNode">{{ t('playground.addEntity') }}</button>
           </div>
-        </div>
-
-        <div class="control-group">
-          <label class="form-label">Add Text Node</label>
+          <label class="form-label mt-3">{{ t('playground.textNode') }}</label>
           <div class="control-row">
             <input class="form-control form-control-sm" v-model="textNodeLabel" :placeholder="t('playground.textNodeLabel')" />
-            <button class="btn btn-sm btn-outline-primary" @click="addTextNode">Add</button>
+            <button class="btn btn-sm btn-outline-primary" @click="addTextNode">{{ t('playground.addText') }}</button>
           </div>
-        </div>
+        </section>
 
-        <div class="control-group">
-          <label class="form-label">Add Relation Edge</label>
+        <section class="tool-section">
+          <h6>{{ t('playground.connect') }} · {{ t('common.relations') }}</h6>
           <div class="stack-row">
             <v-select class="control-select" :options="relationSourceNodeOptions" label="label"
               :reduce="(opt) => opt.value"
@@ -875,7 +879,7 @@ const graphConfigs = defineConfigs({
                 placeholder="Target entity node..." />
               <button class="btn btn-sm btn-outline-secondary icon-btn"
                 :disabled="!relationSourceNodeId && !relationTargetNodeId"
-                title="Swap source and target entities" @click="swapRelationNodes">
+                :title="t('playground.swapNodes')" @click="swapRelationNodes">
                 <i class="bi bi-arrow-left-right"></i>
               </button>
             </div>
@@ -888,12 +892,9 @@ const graphConfigs = defineConfigs({
                 <i class="bi bi-info-circle"></i>
               </button>
             </div>
-            <button class="btn btn-sm btn-outline-primary" @click="addRelationEdge">Add Relation Edge</button>
+            <button class="btn btn-sm btn-primary" @click="addRelationEdge">{{ t('playground.addRelation') }}</button>
           </div>
-        </div>
-
-        <div class="control-group">
-          <label class="form-label">Add Attribute Edge</label>
+          <h6 class="subsection-title">{{ t('common.attributes') }}</h6>
           <div class="stack-row">
             <v-select class="control-select" :options="entityNodeOptions" label="label" :reduce="(opt) => opt.value"
               :searchable="true" :clearable="true" v-model="attributeSourceNodeId"
@@ -909,39 +910,25 @@ const graphConfigs = defineConfigs({
                 <i class="bi bi-info-circle"></i>
               </button>
             </div>
-            <button class="btn btn-sm btn-outline-primary" @click="addAttributeEdge">Add Attribute Edge</button>
+            <button class="btn btn-sm btn-outline-primary" @click="addAttributeEdge">{{ t('playground.addAttribute') }}</button>
           </div>
-        </div>
-
-        <div class="control-group">
-          <div class="action-row">
-            <button class="btn btn-sm btn-outline-danger" @click="clearGraph">Clear Graph</button>
-            <button class="btn btn-sm btn-outline-secondary" @click="openImportModal">Import</button>
-            <button class="btn btn-sm btn-outline-secondary" @click="openExportModal">Export</button>
+        </section>
+        <section class="tool-section manage-section">
+          <h6>{{ t('playground.manage') }}</h6>
+          <div v-if="selectedNode || selectedEdge" class="manage-selection">
+            <strong>{{ selectedNode ? (selectedNode.displayName || selectedNode.name) : selectedEdge.label }}</strong>
+            <small>{{ selectedNode ? selectedNode.id : selectedEdge.id }} · {{ selectedNode ? t('playground.node') : t('playground.edge') }}</small>
+            <button v-if="selectedNode" class="btn btn-sm btn-outline-primary" @click="selectedNode.nodeType === 'text' ? startInlineTextEdit(selectedNode.id) : (store.selected.entity = selectedNode.entityId, beginPreviewSession('entity'))">{{ selectedNode.nodeType === 'text' ? t('playground.rename') : t('playground.preview') }}</button>
+            <button class="btn btn-sm btn-outline-danger" @click="selectedNode ? removeNode(selectedNode.id) : removeEdge(selectedEdge.id)">{{ t('playground.removeSelection') }}</button>
           </div>
-        </div>
-
-        <div class="control-group">
-          <h6 class="mb-1">Nodes</h6>
-          <ul class="side-list">
-            <li v-for="node in selectedNodeList" :key="node.id">
-              <span>{{ selectedNodeListLabel(node) }}</span>
-              <button class="btn btn-sm btn-outline-secondary" @click="removeNode(node.id)">x</button>
-            </li>
-          </ul>
-        </div>
-
-        <div class="control-group">
-          <h6 class="mb-1">Edges</h6>
-          <ul class="side-list">
-            <li v-for="edge in selectedEdgeList" :key="edge.id">
-              <span>{{ edge.id }}: {{ edge.label }}</span>
-              <button class="btn btn-sm btn-outline-secondary" @click="removeEdge(edge.id)">x</button>
-            </li>
-          </ul>
-        </div>
+          <p v-else class="manage-hint">{{ t('playground.manageHint') }}</p>
+          <details class="manage-items"><summary>{{ t('playground.nodes') }} ({{ Object.keys(playgroundNodes).length }})</summary><ul class="side-list"><li v-for="(node,id) in playgroundNodes" :key="id" :class="{selected: selectedNodeIds.includes(id)}" @click="selectedNodeIds=[id];selectedEdgeIds=[]"><span>{{ node.displayName || node.name }}</span><button :aria-label="t('playground.removeSelection')" @click.stop="removeNode(id)">×</button></li></ul></details>
+          <details class="manage-items"><summary>{{ t('playground.edges') }} ({{ Object.keys(playgroundEdges).length }})</summary><ul class="side-list"><li v-for="(edge,id) in playgroundEdges" :key="id" :class="{selected: selectedEdgeIds.includes(id)}" @click="selectedEdgeIds=[id];selectedNodeIds=[]"><span>{{ edge.label }}</span><button :aria-label="t('playground.removeSelection')" @click.stop="removeEdge(id)">×</button></li></ul></details>
+          <button class="btn btn-sm btn-outline-danger w-100 mt-2" @click="clearGraph">{{ t('playground.clear') }}</button>
+        </section>
       </aside>
 
+      <main class="canvas-shell"><div class="canvas-toolbar"><button @click="graphRef?.zoomIn?.()" :title="t('playground.zoomIn')">+</button><button @click="graphRef?.zoomOut?.()" :title="t('playground.zoomOut')">−</button><button @click="ensureGraphVisible" :title="t('playground.fitGraph')">{{ t('playground.fit') }}</button><span class="canvas-count">{{ Object.keys(playgroundNodes).length }} {{ t('playground.nodes').toLowerCase() }} · {{ Object.keys(playgroundEdges).length }} {{ t('playground.edges').toLowerCase() }}</span></div>
       <div class="playground-canvas" ref="canvasRef">
         <v-network-graph ref="graphRef" :nodes="playgroundNodes" :edges="playgroundEdges" :layouts="playgroundLayouts"
           :configs="graphConfigs" :event-handlers="graphEventHandlers" v-model:selected-nodes="selectedNodeIds"
@@ -985,7 +972,16 @@ const graphConfigs = defineConfigs({
             @blur="saveInlineTextEdit" @keydown.enter.prevent="saveInlineTextEdit"
             @keydown.esc.prevent="cancelInlineTextEdit" />
         </div>
-      </div>
+      </div><div class="canvas-legend"><span><i class="legend-dot entity-dot"></i>{{ t('playground.entityNode') }}</span><span><i class="legend-dot text-dot"></i>{{ t('playground.textNode') }}</span><span><i class="legend-line rel-line"></i>{{ t('playground.relationEdge') }}</span><span><i class="legend-line attr-line"></i>{{ t('playground.attributeEdge') }}</span></div></main>
+
+      <aside class="inspector-panel"><div class="inspector-heading"><h5>{{ selectedNode || selectedEdge ? t('playground.selectedItem') : t('playground.graphItems') }}</h5><div class="inspector-tabs"><button :class="{active:inspectorTab==='details'}" @click="inspectorTab='details'">{{ t('playground.details') }}</button><button :class="{active:inspectorTab==='items'}" @click="inspectorTab='items'">{{ t('playground.graphItems') }}</button></div></div>
+        <div v-if="inspectorTab==='details'" class="inspector-content">
+          <template v-if="selectedNode"><div class="selected-summary"><span class="legend-dot" :class="selectedNode.nodeType==='text'?'text-dot':'entity-dot'"></span><div><strong>{{ selectedNode.displayName || selectedNode.name }}</strong><small>{{ selectedNode.id }} · {{ selectedNode.nodeType }}</small></div></div><dl><dt>{{ t('playground.label') }}</dt><dd>{{ selectedNode.displayName || selectedNode.name }}</dd><dt>{{ t('playground.identifier') }}</dt><dd>{{ selectedNode.entityId || '—' }}</dd></dl><button class="btn btn-sm btn-outline-danger w-100" @click="removeNode(selectedNode.id)">{{ t('playground.removeSelection') }}</button></template>
+          <template v-else-if="selectedEdge"><div class="selected-summary"><i class="legend-line" :class="selectedEdge.edgeType==='attribute'?'attr-line':'rel-line'"></i><div><strong>{{ selectedEdge.label }}</strong><small>{{ selectedEdge.id }} · {{ selectedEdge.edgeType }}</small></div></div><dl><dt>{{ t('playground.source') }}</dt><dd>{{ selectedEdge.source }}</dd><dt>{{ t('playground.target') }}</dt><dd>{{ selectedEdge.target }}</dd></dl><button class="btn btn-sm btn-outline-danger w-100" @click="removeEdge(selectedEdge.id)">{{ t('playground.removeSelection') }}</button></template>
+          <p v-else class="inspector-empty">{{ t('playground.selectHint') }}</p>
+        </div>
+        <div v-else class="inspector-content"><h6>{{ t('playground.nodes') }} ({{ Object.keys(playgroundNodes).length }})</h6><ul class="side-list"><li v-for="node in Object.entries(playgroundNodes)" :key="node[0]" @click="selectedNodeIds=[node[0]]"><span>{{ node[1].displayName || node[1].name }}</span><button @click.stop="removeNode(node[0])">×</button></li></ul><h6 class="mt-3">{{ t('playground.edges') }} ({{ Object.keys(playgroundEdges).length }})</h6><ul class="side-list"><li v-for="edge in Object.entries(playgroundEdges)" :key="edge[0]" @click="selectedEdgeIds=[edge[0]]"><span>{{ edge[1].label }}</span><button @click.stop="removeEdge(edge[0])">×</button></li></ul><p v-if="!Object.keys(playgroundNodes).length&&!Object.keys(playgroundEdges).length" class="inspector-empty">{{ t('playground.emptyGraph') }}</p></div>
+      </aside>
     </div>
 
     <div v-if="showEntityPreviewModal" class="modal fade show d-block" tabindex="-1" role="dialog"
@@ -1053,6 +1049,7 @@ const graphConfigs = defineConfigs({
 </template>
 
 <style scoped>
+.playground-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin:0 auto 1rem;max-width:1800px;padding:.35rem .2rem}.playground-eyebrow{color:#0b57d0;font-size:.7rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}.playground-heading h1{margin:.1rem 0;font:700 clamp(1.8rem,3vw,2.5rem)/1 Georgia,serif;color:#0b1f49}.playground-heading .playground-note{margin:0;color:#60728a}.heading-actions{display:flex;gap:.5rem;flex-shrink:0}.playground-grid{grid-template-columns:minmax(275px,320px) minmax(0,1fr) minmax(245px,290px);gap:.8rem;align-items:stretch}.playground-controls,.inspector-panel{max-height:86vh;border-color:#cfe1f6;border-radius:16px;padding:0;background:#fff;box-shadow:0 12px 32px rgba(22,65,120,.07)}.left-nav{top:1rem}.left-nav-header,.inspector-heading{position:static;padding:.95rem 1rem;background:linear-gradient(110deg,#e9f4ff,#f9fcff);border-bottom:1px solid #d8e7f7;margin:0}.left-nav-header h5,.inspector-heading h5{color:#103b72;font:700 1.08rem Georgia,serif}.tool-section{padding:.9rem 1rem;border-bottom:1px solid #e5eef8}.tool-section h6{margin:0 0 .75rem;color:#0b57d0;font-size:.76rem;font-weight:850;letter-spacing:.09em;text-transform:uppercase}.tool-section .form-label{margin-bottom:.28rem;color:#48617e;font-size:.78rem;font-weight:700}.tool-section .subsection-title{margin-top:1rem;padding-top:.8rem;border-top:1px solid #e5eef8}.tool-section .btn{white-space:nowrap}.canvas-shell{position:relative;min-width:0;min-height:70vh;border:1px solid #cfe1f6;border-radius:17px;overflow:hidden;background:#f8fbff;box-shadow:0 12px 32px rgba(22,65,120,.07)}.playground-canvas{height:calc(86vh - 4.3rem);min-height:560px;border:0;border-radius:0;background-color:#fbfdff;background-image:radial-gradient(#c9ddf2 1px,transparent 1px),linear-gradient(145deg,rgba(235,246,255,.65),rgba(255,255,255,.5));background-size:22px 22px,100% 100%}.canvas-toolbar{position:absolute;z-index:5;top:.75rem;left:.75rem;display:flex;align-items:center;gap:.35rem;padding:.35rem;border:1px solid #d4e4f5;border-radius:11px;background:rgba(255,255,255,.95);box-shadow:0 5px 18px rgba(22,65,120,.1)}.canvas-toolbar button{min-width:2rem;height:2rem;border:0;border-radius:7px;color:#24527f;background:transparent;font-weight:800}.canvas-toolbar button:hover{background:#eaf4ff}.canvas-count{padding:0 .55rem;color:#60758f;font-size:.75rem}.canvas-legend{position:absolute;z-index:4;right:.8rem;bottom:.8rem;display:grid;gap:.4rem;padding:.7rem .8rem;border:1px solid #d3e3f4;border-radius:11px;color:#45607d;background:rgba(255,255,255,.94);font-size:.75rem;box-shadow:0 5px 18px rgba(22,65,120,.08)}.canvas-legend span{display:flex;align-items:center;gap:.45rem}.legend-item{font-size:inherit}.legend-dot{width:.68rem;height:.68rem;border-radius:3px;display:inline-block}.entity-dot{background:#e5f1ff;border:1px solid #2673ca}.text-dot{background:#fff2dc;border:1px solid #e29a26}.legend-line{width:1.1rem;border-top:2px solid #2673ca;display:inline-block}.attr-line{border-top-color:#df8a18;border-top-style:dashed}.rel-line{border-top-color:#2673ca}.inspector-panel{overflow:auto}.inspector-heading{position:sticky;top:0;z-index:5}.inspector-tabs{display:flex;gap:.35rem;margin-top:.7rem}.inspector-tabs button{flex:1;border:1px solid #cfe1f6;border-radius:8px;padding:.4rem;color:#49627e;background:#fff;font-size:.8rem}.inspector-tabs button.active{border-color:#0b57d0;color:#fff;background:#0b57d0}.inspector-content{padding:.9rem}.selected-summary{display:flex;align-items:center;gap:.65rem;padding:.75rem;border:1px solid #d7e6f6;border-radius:12px;background:#f7fbff}.selected-summary strong,.selected-summary small{display:block}.selected-summary strong{color:#123d70;font-size:.9rem}.selected-summary small{margin-top:.25rem;color:#72839a;font-size:.73rem}.inspector-content dl{display:grid;grid-template-columns:1fr auto;gap:.55rem;margin:1rem 0;color:#546a83;font-size:.82rem}.inspector-content dt{font-weight:700}.inspector-content dd{margin:0;text-align:right;color:#1a3f6b}.inspector-content h6{color:#2c4e75;font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em}.inspector-empty{padding:2rem .5rem;color:#78899d;font-size:.88rem;text-align:center}.side-list li{cursor:pointer;border-color:#e1ebf6;border-radius:8px;padding:.4rem .5rem}.side-list button{border:0;border-radius:6px;color:#9b4250;background:#fff1f2}.playground-page{width:min(1800px,calc(100vw - 2rem));margin:0 auto}.control-group{margin-bottom:.7rem}
 .playground-note {
   margin-bottom: 0.5rem;
 }
@@ -1256,4 +1253,6 @@ const graphConfigs = defineConfigs({
     margin-left: 0;
   }
 }
+@media(max-width:1250px){.playground-grid{grid-template-columns:minmax(260px,310px) minmax(0,1fr)}.inspector-panel{grid-column:1/-1;max-height:none}.inspector-content{max-height:320px;overflow:auto}.canvas-shell{min-height:66vh}}
+@media(max-width:700px){.playground-heading{align-items:flex-start;flex-direction:column}.playground-grid{grid-template-columns:1fr}.playground-controls{max-height:none}.canvas-shell{min-height:55vh}.playground-canvas{height:60vh;min-height:420px}.canvas-legend{right:.45rem;bottom:.45rem;padding:.5rem;font-size:.68rem}.inspector-panel{grid-column:auto}.heading-actions{width:100%}}
 </style>
